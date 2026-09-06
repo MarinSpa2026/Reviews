@@ -3,74 +3,185 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Déjanos tu Reseña</title>
+  <title>Portal de Reseñas y Opiniones</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f9;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .container {
-      background: #ffffff;
-      padding: 25px;
-      border-radius: 8px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      width: 100%;
-      max-width: 400px;
-    }
-    h2 { margin-top: 0; color: #333; }
-    label { font-weight: bold; display: block; margin-top: 10px; color: #555; }
-    input, select, textarea {
-      width: 100%;
-      padding: 10px;
-      margin-top: 5px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      box-sizing: border-box;
-    }
-    button {
-      width: 100%;
-      padding: 12px;
-      background-color: #28a745;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      font-size: 16px;
-      margin-top: 15px;
-      cursor: pointer;
-    }
-    button:hover { background-color: #218838; }
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px; color: #1e293b; }
+    .container { max-width: 750px; margin: 0 auto; }
+    h1 { text-align: center; color: #0f172a; margin-bottom: 25px; }
+    
+    .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 25px; }
+    
+    /* Panel de Métricas */
+    .kpi-container { display: flex; gap: 15px; margin-bottom: 20px; text-align: center; }
+    .kpi-box { flex: 1; background: #f1f5f9; padding: 15px; border-radius: 8px; }
+    .kpi-num { font-size: 1.8em; font-weight: bold; color: #0284c7; }
+
+    /* Formulario de Registro */
+    label { display: block; font-weight: 600; margin-top: 12px; margin-bottom: 5px; }
+    input, select, textarea, button { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; }
+    button { background-color: #0284c7; color: white; font-weight: bold; border: none; cursor: pointer; margin-top: 15px; transition: 0.2s; }
+    button:hover { background-color: #0369a1; }
+
+    /* Histórico de Reseñas */
+    .review-item { border-bottom: 1px solid #e2e8f0; padding: 16px 0; }
+    .review-item:last-child { border-bottom: none; }
+    .review-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; margin-bottom: 6px; }
+    .stars { color: #f59e0b; letter-spacing: 2px; }
+    .review-date { font-size: 12px; color: #94a3b8; font-weight: normal; margin-left: 8px; }
+    .review-text { color: #334155; font-size: 15px; line-height: 1.5; white-space: pre-line; }
+    .loading { text-align: center; color: #64748b; font-style: italic; padding: 20px 0; }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <h2>Déjanos tu opinión</h2>
-  
-  <form action="https://formspree.io/f/mrpgawbv" method="POST">
-    
-    <label for="nombre">Nombre:</label>
-    <input type="text" id="nombre" name="nombre" required placeholder="Tu nombre">
+  <h1>Déjanos tu opinión</h1>
 
-    <label for="puntuacion">Puntuación:</label>
-    <select id="puntuacion" name="puntuacion">
-      <option value="5">⭐⭐⭐⭐⭐ (5/5)</option>
-      <option value="4">⭐⭐⭐⭐ (4/5)</option>
-      <option value="3">⭐⭐⭐ (3/5)</option>
-      <option value="2">⭐⭐ (2/5)</option>
-      <option value="1">⭐ (1/5)</option>
-    </select>
+  <!-- 1. CAJÓN DE REGISTRO (FORMULARIO) -->
+  <div class="card">
+    <h3>Escribe una reseña</h3>
+    <form id="reviewForm">
+      <label for="nombre">Tu Nombre:</label>
+      <input type="text" id="nombre" required placeholder="Ej. Carlos Mendoza">
 
-    <label for="mensaje">Reseña:</label>
-    <textarea id="mensaje" name="mensaje" rows="4" required placeholder="Escribe aquí tu experiencia..."></textarea>
+      <label for="puntuacion">Calificación:</label>
+      <select id="puntuacion">
+        <option value="5">⭐⭐⭐⭐⭐ (5/5 Excelente)</option>
+        <option value="4">⭐⭐⭐⭐ (4/5 Muy bueno)</option>
+        <option value="3">⭐⭐⭐ (3/5 Regular)</option>
+        <option value="2">⭐⭐ (2/5 Malo)</option>
+        <option value="1">⭐ (1/5 Pésimo)</option>
+      </select>
 
-    <button type="submit">Enviar Reseña</button>
-  </form>
+      <label for="comentario">Tu Opinión:</label>
+      <textarea id="comentario" rows="3" required placeholder="Describe tu experiencia..."></textarea>
+
+      <button type="submit" id="btnEnviar">Publicar Reseña</button>
+    </form>
+  </div>
+
+  <!-- 2. PANEL DE RESUMEN Y GRÁFICA -->
+  <div class="card">
+    <h3>Satisfacción General</h3>
+    <div class="kpi-container">
+      <div class="kpi-box">
+        <div>Promedio</div>
+        <div class="kpi-num" id="avgRating">0.0</div>
+      </div>
+      <div class="kpi-box">
+        <div>Total Opiniones</div>
+        <div class="kpi-num" id="totalReviews">0</div>
+      </div>
+    </div>
+    <canvas id="satisfactionChart" height="120"></canvas>
+  </div>
+
+  <!-- 3. HISTÓRICO DE RESEÑAS (UBICADO DEBAJO DEL REGISTRO) -->
+  <div class="card">
+    <h3>Histórico de Reseñas</h3>
+    <div id="reviewsList" class="loading">Cargando comentarios registrados...</div>
+  </div>
 </div>
+
+<script>
+  // ⚠️ REEMPLAZA ESTA URL CON TU LINK DE GOOGLE APPS SCRIPT:
+  const SCRIPT_URL = "https://script.google.com/u/0/home/projects/1F_UAcJxBv-vhOKLrLFdRbbBPWk3zmTVT3pro7exg1LvmL4P1GzlTdYgk/edit";
+
+  let myChart;
+
+  function initChart(counts) {
+    const ctx = document.getElementById('satisfactionChart').getContext('2d');
+    if (myChart) myChart.destroy();
+    
+    myChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['1★', '2★', '3★', '4★', '5★'],
+        datasets: [{
+          label: 'Cantidad de reseñas',
+          data: counts,
+          backgroundColor: ['#ef4444', '#f97316', '#eab308', '#06b6d4', '#10b981']
+        }]
+      },
+      options: { 
+        responsive: true, 
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, precision: 0 } } 
+      }
+    });
+  }
+
+  async function loadData() {
+    try {
+      const res = await fetch(SCRIPT_URL);
+      const data = await res.json();
+      
+      let counts = [0, 0, 0, 0, 0];
+      let total = data.length;
+      let sum = 0;
+      let listHtml = '';
+
+      // Mostramos las reseñas más recientes primero
+      data.reverse().forEach(item => {
+        let p = parseInt(item.puntuacion);
+        if (p >= 1 && p <= 5) counts[p - 1]++;
+        sum += p;
+
+        listHtml += `
+          <div class="review-item">
+            <div class="review-header">
+              <span>${escapeHtml(item.nombre)} <span class="review-date">${item.fecha || ''}</span></span>
+              <span class="stars">${'★'.repeat(p)}${'☆'.repeat(5 - p)}</span>
+            </div>
+            <div class="review-text">${escapeHtml(item.comentario)}</div>
+          </div>`;
+      });
+
+      document.getElementById('totalReviews').innerText = total;
+      document.getElementById('avgRating').innerText = total > 0 ? (sum / total).toFixed(1) : "0.0";
+      document.getElementById('reviewsList').innerHTML = listHtml || '<p>Aún no hay reseñas registradas. ¡Sé el primero!</p>';
+
+      initChart(counts);
+    } catch (e) {
+      document.getElementById('reviewsList').innerText = 'No se pudieron cargar las reseñas. Revisa la URL de Apps Script.';
+    }
+  }
+
+  document.getElementById('reviewForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btnEnviar');
+    btn.disabled = true;
+    btn.innerText = 'Enviando...';
+
+    const payload = {
+      nombre: document.getElementById('nombre').value,
+      puntuacion: document.getElementById('puntuacion').value,
+      comentario: document.getElementById('comentario').value
+    };
+
+    try {
+      await fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      document.getElementById('reviewForm').reset();
+      await loadData(); // Recarga el histórico al instante
+    } catch (error) {
+      alert('Ocurrió un error al registrar la reseña.');
+    } finally {
+      btn.disabled = false;
+      btn.innerText = 'Publicar Reseña';
+    }
+  });
+
+  function escapeHtml(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  loadData();
+</script>
 
 </body>
 </html>
