@@ -13,36 +13,38 @@
     
     .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 25px; }
     
-    /* Panel de Métricas */
     .kpi-container { display: flex; gap: 15px; margin-bottom: 20px; text-align: center; }
     .kpi-box { flex: 1; background: #f1f5f9; padding: 15px; border-radius: 8px; }
     .kpi-num { font-size: 1.8em; font-weight: bold; color: #0284c7; }
 
-    /* Formulario de Registro */
     label { display: block; font-weight: 600; margin-top: 12px; margin-bottom: 5px; }
     input, select, textarea, button { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; }
+    input[type="file"] { padding: 8px; background: #f8fafc; cursor: pointer; }
     button { background-color: #0284c7; color: white; font-weight: bold; border: none; cursor: pointer; margin-top: 15px; transition: 0.2s; }
     button:hover { background-color: #0369a1; }
 
-    /* Histórico de Reseñas */
+    /* Histórico y Fotografías */
     .review-item { border-bottom: 1px solid #e2e8f0; padding: 16px 0; }
     .review-item:last-child { border-bottom: none; }
     .review-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; margin-bottom: 6px; }
     .stars { color: #f59e0b; letter-spacing: 2px; }
     .review-date { font-size: 12px; color: #94a3b8; font-weight: normal; margin-left: 8px; }
-    .review-text { color: #334155; font-size: 15px; line-height: 1.5; white-space: pre-line; }
+    .review-text { color: #334155; font-size: 15px; line-height: 1.5; margin-bottom: 10px; }
+    .review-photo { width: 100%; max-height: 350px; object-fit: cover; border-radius: 8px; margin-top: 10px; border: 1px solid #e2e8f0; }
     .loading { text-align: center; color: #64748b; font-style: italic; padding: 20px 0; }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <div style="text-align: center; margin-top: 10px; margin-bottom: 20px;">
-  <img src="image0.png" alt="Logo de mi empresa" style="max-width: 180px; height: auto;">
-</div>
+  <!-- LOGO (OPCIONAL) -->
+  <div style="text-align: center; margin-bottom: 15px;">
+    <img src="logo.png" alt="Logo de mi empresa" style="max-width: 180px; height: auto;" onerror="this.style.display='none'">
+  </div>
+
   <h1>Déjanos tu opinión</h1>
 
-  <!-- 1. CAJÓN DE REGISTRO (FORMULARIO) -->
+  <!-- 1. CAJÓN DE REGISTRO CON CAMPO DE FOTO -->
   <div class="card">
     <h3>Escribe una reseña</h3>
     <form id="reviewForm">
@@ -61,11 +63,15 @@
       <label for="comentario">Tu Opinión:</label>
       <textarea id="comentario" rows="3" required placeholder="Describe tu experiencia..."></textarea>
 
+      <!-- Campo opcional para subir imagen -->
+      <label for="foto">Adjuntar foto del trabajo o servicio (Opcional):</label>
+      <input type="file" id="foto" accept="image/*">
+
       <button type="submit" id="btnEnviar">Publicar Reseña</button>
     </form>
   </div>
 
-  <!-- 2. PANEL DE RESUMEN Y GRÁFICA -->
+  <!-- 2. RESUMEN DE SATISFACCIÓN -->
   <div class="card">
     <h3>Satisfacción General</h3>
     <div class="kpi-container">
@@ -81,7 +87,7 @@
     <canvas id="satisfactionChart" height="120"></canvas>
   </div>
 
-  <!-- 3. HISTÓRICO DE RESEÑAS (UBICADO DEBAJO DEL REGISTRO) -->
+  <!-- 3. HISTÓRICO DE RESEÑAS CON IMÁGENES -->
   <div class="card">
     <h3>Histórico de Reseñas</h3>
     <div id="reviewsList" class="loading">Cargando comentarios registrados...</div>
@@ -90,7 +96,7 @@
 
 <script>
   // ⚠️ REEMPLAZA ESTA URL CON TU LINK DE GOOGLE APPS SCRIPT:
-  const SCRIPT_URL = "https://script.google.com/u/0/home/projects/1F_UAcJxBv-vhOKLrLFdRbbBPWk3zmTVT3pro7exg1LvmL4P1GzlTdYgk/edit";
+  const SCRIPT_URL = "TU_URL_DE_APPS_SCRIPT_AQUI";
 
   let myChart;
 
@@ -116,6 +122,22 @@
     });
   }
 
+  // Función para procesar y subir imagen a servicio en la nube
+  async function uploadImage(file) {
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    // Usamos el cliente anónimo de Imgur para subir la imagen
+    const res = await fetch('https://api.imgur.com/3/image', {
+      method: 'POST',
+      headers: { Authorization: 'Client-ID 3c40134f5aa51c2' },
+      body: formData
+    });
+    
+    const data = await res.json();
+    return data.success ? data.data.link : '';
+  }
+
   async function loadData() {
     try {
       const res = await fetch(SCRIPT_URL);
@@ -126,11 +148,12 @@
       let sum = 0;
       let listHtml = '';
 
-      // Mostramos las reseñas más recientes primero
       data.reverse().forEach(item => {
         let p = parseInt(item.puntuacion);
         if (p >= 1 && p <= 5) counts[p - 1]++;
         sum += p;
+
+        let photoHtml = item.foto ? `<img src="${escapeHtml(item.foto)}" class="review-photo" alt="Foto adjunta">` : '';
 
         listHtml += `
           <div class="review-item">
@@ -139,6 +162,7 @@
               <span class="stars">${'★'.repeat(p)}${'☆'.repeat(5 - p)}</span>
             </div>
             <div class="review-text">${escapeHtml(item.comentario)}</div>
+            ${photoHtml}
           </div>`;
       });
 
@@ -148,7 +172,7 @@
 
       initChart(counts);
     } catch (e) {
-      document.getElementById('reviewsList').innerText = 'No se pudieron cargar las reseñas. Revisa la URL de Apps Script.';
+      document.getElementById('reviewsList').innerText = 'No se pudieron cargar las reseñas.';
     }
   }
 
@@ -156,21 +180,31 @@
     e.preventDefault();
     const btn = document.getElementById('btnEnviar');
     btn.disabled = true;
-    btn.innerText = 'Enviando...';
+    btn.innerText = 'Subiendo imagen y publicando...';
 
-    const payload = {
-      nombre: document.getElementById('nombre').value,
-      puntuacion: document.getElementById('puntuacion').value,
-      comentario: document.getElementById('comentario').value
-    };
+    const fileInput = document.getElementById('foto');
+    let photoUrl = '';
 
     try {
+      // Subir la imagen si el usuario adjuntó alguna
+      if (fileInput.files.length > 0) {
+        photoUrl = await uploadImage(fileInput.files[0]);
+      }
+
+      const payload = {
+        nombre: document.getElementById('nombre').value,
+        puntuacion: document.getElementById('puntuacion').value,
+        comentario: document.getElementById('comentario').value,
+        foto: photoUrl
+      };
+
       await fetch(SCRIPT_URL, {
         method: 'POST',
         body: JSON.stringify(payload)
       });
+
       document.getElementById('reviewForm').reset();
-      await loadData(); // Recarga el histórico al instante
+      await loadData();
     } catch (error) {
       alert('Ocurrió un error al registrar la reseña.');
     } finally {
