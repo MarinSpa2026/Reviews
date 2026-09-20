@@ -95,8 +95,8 @@
 </div>
 
 <script>
-  // ⚠️ REEMPLAZA ESTA URL CON TU LINK DE GOOGLE APPS SCRIPT:
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzmNuSBpYon0whqsFadoudkdm0IS-ArWF4NEAzAY_IMHtxu9Arch1LSvgN2vNn8y3rz/exec";
+  // ⚠️ REEMPLAZA ESTA URL CON TU LINK DE GOOGLE APPS SCRIPT OBTENIDO EN EL PASO 1:
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwPkUXeYKZusqyyPFpynqIkmRd2bdgHbvfxGOPDURJMi8OmeEESp8vdH0O8isa2-AP4/exec";
 
   let myChart;
 
@@ -198,13 +198,21 @@
         foto: photoUrl
       };
 
+      // Petición POST a Google Apps Script evitando bloqueos CORS
       await fetch(SCRIPT_URL, {
         method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
       document.getElementById('reviewForm').reset();
-      await loadData();
+      
+      // Breve pausa para dar tiempo al script de procesar la entrada en Google Sheets
+      setTimeout(async () => {
+        await loadData();
+      }, 1500);
+
     } catch (error) {
       alert('Ocurrió un error al registrar la reseña.');
     } finally {
